@@ -114,9 +114,7 @@
 		}
 	}
 
-	// Upgraded features
-	{% if request.user.settings.upgraded %}
-	// Upload images
+	// Upload images (always enabled for personal CMS)
 	const $fileInput = document.getElementById("file");
 
 	$uploadButton.onclick = event => {
@@ -157,7 +155,7 @@
 		const formData = new FormData();
 		formData.append("file", file);
 
-		const target = "{% url 'upload_image' id=blog.subdomain %}";
+		const target = "{% url 'upload_image' %}";
 		const position = $textarea.selectionStart || 0;
 		const placeholder = `![Uploading ${file.name}...]\n`;
 
@@ -203,12 +201,4 @@
 			}
 		};
 	}
-	{% else %}
-	$uploadButton.onclick = event => {
-	    event.preventDefault()
-		if (confirm("You've discovered a Pro feature ʕ•ᴥ•ʔﾉ♡\n\nUpgrade to unlock it and support the Tiny Internet!")) {
-	    	window.open('/dashboard/upgrade/')
-		}
-	}
-	{% endif %}
 </script>

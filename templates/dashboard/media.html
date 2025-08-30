@@ -5,7 +5,7 @@
 {% block custom_styles %}
 {% include 'styles/blog/default.css' %}
 {% include 'styles/dashboard.css' %}
-{{ request.user.settings.dashboard_styles | safe }}
+{% include 'snippets/styles.html' with blog=blog %}
 {% endblock %}
 
 {% block content %}
@@ -25,7 +25,7 @@
     <input id="fileSelect" type="file" name="file" multiple required style="display: none" accept="{{ accepted_file_types }}">
 </form>
 
-<form id="deleteForm" method="post" action="{% url 'delete_selected_media' id=blog.subdomain %}">
+<form id="deleteForm" method="post" action="{% url 'delete_selected_media' %}">
     {% csrf_token %}
     <ul style="padding: 0; list-style: none;">
         {% for document in documents %}
@@ -91,6 +91,6 @@ function handleImageError(img) {
 }
 </script>
 
-{{ request.user.settings.dashboard_footer | safe }}
+{{ blog.footer_directive | safe }}
 
 {% endblock %}

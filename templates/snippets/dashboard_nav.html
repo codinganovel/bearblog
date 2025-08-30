@@ -15,7 +15,7 @@
     <a href="{% url 'posts_edit' %}">Posts</a>
     <a href="{% url 'pages_edit' %}">Pages</a>
     <a href="{% url 'styles' %}">Themes</a>
-    <a href="{% url 'email_list' id=blog.subdomain %}">Emails</a>
+    <a href="{% url 'email_list' %}">Emails</a>
     {% endif %}
     <!-- Upgrade removed for personal CMS -->
 </span>
@@ -37,7 +37,7 @@
     {% if blog.is_after_cutoff %}
         Upgrade to get discovered.
     {% else %}
-        <a href="{% url 'opt_in_review' id=blog.subdomain %}">Submit your blog for review</a>.
+        <a href="{% url 'opt_in_review' %}">Submit your blog for review</a>.
     {% endif %}
     </small>
 </p>

@@ -8,7 +8,7 @@ Custom domain | Bear Blog
 {% block custom_styles %}
     {% include 'styles/blog/default.css' %}
     {% include 'styles/dashboard.css' %}
-    {{ request.user.settings.dashboard_styles | safe }}
+    {% include 'snippets/styles.html' with blog=blog %}
 {% endblock %}
 
 {% block content %}

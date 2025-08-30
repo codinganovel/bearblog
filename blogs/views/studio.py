@@ -33,50 +33,8 @@ def get_blog():
 
 @login_required
 def list(request):
-    blogs = Blog.objects.filter(user=request.user).order_by("created_date")
-
-    if request.method == "POST":
-        form = BlogForm(request.POST)
-        if form.is_valid():
-            if blogs.count() >= request.user.settings.max_blogs:
-                form.add_error('title', 'You have reached the maximum number of blogs.')
-            else:
-                subdomain = slugify(form.cleaned_data['subdomain'])
-
-                if not is_protected(subdomain) and not Blog.objects.filter(subdomain=subdomain).exists():
-                    blog_info = form.save(commit=False)
-                    blog_info.user = request.user
-                    blog_info.save()
-                    return redirect('dashboard', id=blog_info.subdomain)
-                else:
-                    form.add_error('subdomain', 'This subdomain is already in use or protected.')
-    else:
-        form = BlogForm()
-
-    subscription_cancelled = None
-    subscription_link = None
-    variant = None
-    upgrade_subscription_link = None
-
-    if request.user.settings.order_id:
-        try:
-            subscription = get_subscriptions(request.user.settings.order_id)
-            if subscription:
-                subscription_cancelled = subscription['data'][0]['attributes']['cancelled']
-                subscription_link = subscription['data'][0]['attributes']['urls']['customer_portal']
-                upgrade_subscription_link = subscription['data'][0]['attributes']['urls']['customer_portal_update_subscription']
-                variant = subscription['data'][0]['attributes']['variant_name']
-        except Exception as e:
-            print('No sub found ', e)
-
-    return render(request, 'studio/blog_list.html', {
-        'blogs': blogs,
-        'form': form,
-        'subscription_cancelled': subscription_cancelled,
-        'subscription_link': subscription_link,
-        'upgrade_subscription_link': upgrade_subscription_link,
-        'variant': variant
-    })
+    # Single-blog personal CMS: redirect to studio/dashboard
+    return redirect('dashboard')
 
 
 @login_required
@@ -296,12 +254,8 @@ def post(request, uid=None):
                 backup_in_thread(blog)
                 
                 if is_new:
-                    # Self-upvote
-                    upvote = Upvote(post=post, hash_id=salt_and_hash(request, 'year'))
-                    upvote.save()
-
-                    # Redirect to the new post detail view
-                    return redirect('post_edit', id=blog.subdomain, uid=post.uid)
+                    # Redirect to the new post edit view
+                    return redirect('post_edit', uid=post.uid)
 
         except Exception as error:
             error_messages.append(f"Header attribute error - your post has not been saved. Error: {str(error)}")
@@ -470,8 +424,7 @@ def post_template(request):
 def custom_domain_edit(request):
     blog = get_blog()
 
-    if not blog.user.settings.upgraded:
-        return redirect('upgrade')
+    # Upgrades are not supported in personal CMS; allow access
 
     error_messages = []
 
@@ -507,8 +460,7 @@ def custom_domain_edit(request):
 def directive_edit(request):
     blog = get_blog()
 
-    if not blog.user.settings.upgraded:
-        return redirect('upgrade')
+    # Upgrades are not supported in personal CMS; allow access
 
     header = request.POST.get("header", "")
     footer = request.POST.get("footer", "")

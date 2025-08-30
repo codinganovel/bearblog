@@ -5,7 +5,7 @@
 {% block custom_styles %}
     {% include 'styles/blog/default.css' %}
     {% include 'styles/dashboard.css' %}
-    {{ request.user.settings.dashboard_styles | safe }}
+    {% include 'snippets/styles.html' with blog=blog %}
 {% endblock %}
 
 {% block nav %}{% include '../snippets/dashboard_nav.html' %}{% endblock %}
@@ -53,20 +53,20 @@
     </form>
 </p>
 <p>
-    <a href="{% url 'custom_domain_edit' id=blog.subdomain %}">Custom domain</a>
+    <a href="{% url 'custom_domain_edit' %}">Custom domain</a>
 </p>
 <p>
-    <a href="{% url 'directive_edit' id=blog.subdomain %}">Header and footer directives</a>
+    <a href="{% url 'directive_edit' %}">Header and footer directives</a>
 </p>
 <p>
-    <a href="{% url 'advanced_settings' id=blog.subdomain %}">Advanced settings</a>
+    <a href="{% url 'advanced_settings' %}">Advanced settings</a>
 </p>
 
 <p>
     <a href="?export=true" download>Export all blog data</a>
 </p>
 
-<form method="post" action="{% url 'blog_delete' blog.subdomain %}">
+<form method="post" action="{% url 'blog_delete' %}">
     {% csrf_token %}
     <button type="submit" onclick="return confirm('Are you sure you would like to delete {{ blog.subdomain }}? This cannot be undone.');">
         Delete blog

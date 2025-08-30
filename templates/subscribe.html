@@ -20,7 +20,7 @@
 {% block nav %}{% markdown content=blog.nav blog=blog post=None tz=tz %}{% endblock %}
 
 {% block content %}
-{% if blog.user.settings.upgraded and not subscribe_message %}
+{% if not subscribe_message %}
 <p>
     <b>Subscribe to this blog</b>
 </p>
@@ -33,7 +33,7 @@
 {% endblock %}
 
 {% block footer %}
-{% if blog.user.settings.upgraded and blog.footer_directive %}
+{% if blog.footer_directive %}
 <span id="footer-directive">
 {% markdown content=blog.footer_directive blog=blog post=None tz=tz %}
 </span>

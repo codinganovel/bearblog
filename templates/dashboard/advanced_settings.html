@@ -5,7 +5,7 @@
 {% block custom_styles %}
     {% include 'styles/blog/default.css' %}
     {% include 'styles/dashboard.css' %}
-    {{ request.user.settings.dashboard_styles | safe }}
+    {% include 'snippets/styles.html' with blog=blog %}
 {% endblock %}
 
 {% block content %}
@@ -13,7 +13,7 @@
 <form method="POST" class="post-form full-width">
     {% csrf_token %}
     <p style="line-height: 0">
-        <button onclick="event.preventDefault(); window.location = '/{{ blog.subdomain }}/dashboard/settings/'">&#8592; Back</button>
+        <button onclick="event.preventDefault(); window.location = '{% url 'settings' %}'">&#8592; Back</button>
         <button type="submit">Save</button>
         <button onclick="event.preventDefault(); window.open('{{ blog.dynamic_useful_domain }}');">View</button>
     </p>

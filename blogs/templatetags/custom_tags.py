@@ -175,7 +175,6 @@ def markdown(content, blog=None, post=None, tz=None):
         return ''
 
     # For personal CMS, allow all content (no upgrade restrictions)
-    # processed_markup = clean(processed_markup)  # Removed upgrade restriction
 
     # Replace {{ xyz }} elements
     if blog:

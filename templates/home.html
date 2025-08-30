@@ -41,8 +41,9 @@
 <a href="{{ bear_root }}/mothership/blogs/blog/{{ blog.id }}/change/" target="_blank" style="position:absolute;top:0;left:3px;">Blog admin</a>
 {% endif %}
 
+{# Show edit link only for logged in admin users in personal CMS #}
 {% if request.user.is_authenticated and not preview %}
-<a href="{% url 'dashboard' id=blog.subdomain %}" target="_blank" style="position: fixed;right: 0;top: 0;padding: 20px;color: lightgrey;text-decoration: none;font-size: 25px;">✎</a>
+<a href="{% url 'dashboard' %}" target="_blank" style="position: fixed;right: 0;top: 0;padding: 20px;color: lightgrey;text-decoration: none;font-size: 25px;">✎</a>
 {% endif %}
 
 {% if blog.content %}

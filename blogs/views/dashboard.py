@@ -213,8 +213,8 @@ def settings(request):
 @login_required
 def delete_user(request):
     if request.method == "POST":
-        user = get_object_or_404(get_user_model(), pk=request.user.pk)
-        user.delete()
+        # For personal CMS, deleting the admin user is not supported.
+        # Redirect to home instead.
         return redirect('/')
 
     return render(request, 'account/account_confirm_delete.html')

@@ -75,7 +75,7 @@
         </p>
     {% else %}
         {% if request.user.is_authenticated %}
-            <a href="{% url 'post_edit' id=blog.subdomain uid=post.uid %}" target="_blank" style="position: fixed;right: 0;top: 0;padding: 20px;color: lightgrey;text-decoration: none;font-size: 25px;">✎</a>
+            <a href="{% url 'post_edit' uid=post.uid %}" target="_blank" style="position: fixed;right: 0;top: 0;padding: 20px;color: lightgrey;text-decoration: none;font-size: 25px;">✎</a>
         {% endif %}
     {% endif %}
 

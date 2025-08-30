@@ -5,7 +5,7 @@
 {% block custom_styles %}
     {% include 'styles/blog/default.css' %}
     {% include 'styles/dashboard.css' %}
-    {{ request.user.settings.dashboard_styles | safe }}
+    {% include 'snippets/styles.html' with blog=blog %}
 {% endblock %}
 
 {% block nav %}{% include '../snippets/dashboard_nav.html' %}{% endblock %}
@@ -24,9 +24,9 @@
 {{ chart|safe  }}
 <h3>Need more in-depth analytics?</h3>
 <p>
-    <a href="{% url 'upgrade' %}">Upgrade</a> to get access to in-depth, long-term analytics (<a href="https://docs.bearblog.dev/analytics/" target="_blank">more info</a>).
+    In-depth analytics are not available in this personal CMS build.
 </p>
 
-{{ request.user.settings.dashboard_footer | safe }}
+{{ blog.footer_directive | safe }}
 
 {% endblock %}

@@ -7,7 +7,7 @@
     {% include 'styles/blog/default.css' %}
     {% include 'styles/dashboard.css' %}
     {% if not public %}
-    {{ request.user.settings.dashboard_styles | safe }}
+    {% include 'snippets/styles.html' with blog=blog %}
     {% endif %}
 {% endblock %}
 

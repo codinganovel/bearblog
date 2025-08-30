@@ -5,7 +5,7 @@
 {% block custom_styles %}
     {% include 'styles/blog/default.css' %}
     {% include 'styles/dashboard.css' %}
-    {{ request.user.settings.dashboard_styles | safe }}
+    {% include 'snippets/styles.html' with blog=blog %}
 {% endblock %}
 
 {% block nav %}{% include '../snippets/dashboard_nav.html' %}{% endblock %}
@@ -23,12 +23,12 @@
     <b style="color: #444">{{ style.title }}</b>
     <br>
     <span>
-      <form method="get" action="{% url 'styles' id=blog.subdomain %}" style="display:inline;" target="_blank">
+      <form method="get" action="{% url 'styles' %}" style="display:inline;" target="_blank">
           <input type="hidden" name="stylesheet" value="{{ style.identifier }}">
           <input type="hidden" name="preview" value="true">
           <button type="submit">Preview</button>
       </form>
-      <form method="post" action="{% url 'styles' id=blog.subdomain %}" style="display:inline;">
+      <form method="post" action="{% url 'styles' %}" style="display:inline;">
           {% csrf_token %}
           <input type="hidden" name="stylesheet" value="{{ style.identifier }}">
           <button type="submit" onclick="return confirm('This will overwrite your current styles, are you sure?')">Apply {{ style.name }}</button>
@@ -86,6 +86,6 @@
 </script>
 {% endif %}
 
-{{ request.user.settings.dashboard_footer | safe }}
+{{ blog.footer_directive | safe }}
 
 {% endblock %}

@@ -56,14 +56,15 @@ def signup(request):
                 user = User.objects.create_user(username=email, email=email, password=password)
                 user.backend = 'django.contrib.auth.backends.ModelBackend'
             
-                blog = Blog.objects.filter(user=user).first()
+                # For personal CMS create or reuse the single Blog instance
+                blog = Blog.objects.first()
                 if not blog:
-                    blog = Blog.objects.create(title=title, subdomain=subdomain, content=content, user=user)
+                    blog = Blog.objects.create(title=title, subdomain=subdomain, content=content)
 
                 # Log in the user
                 login(request, user)
 
-                return redirect('dashboard', id=blog.subdomain)
+                return redirect('dashboard')
             except IntegrityError:
                 error_messages.append('An account with this email address already exists.')
                 

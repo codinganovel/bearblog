@@ -12,7 +12,7 @@ New post | Bear Blog
 {% block custom_styles %}
     {% include 'styles/blog/default.css' %}
     {% include 'styles/dashboard.css' %}
-    {{ request.user.settings.dashboard_styles | safe }}
+    {% include 'snippets/styles.html' with blog=blog %}
 {% endblock %}
 
 {% block content %}
@@ -27,7 +27,7 @@ New post | Bear Blog
 <form method="POST" class="post-form full-width">
     <p class="sticky-controls">
         <button
-            onclick="event.preventDefault(); sessionStorage.clear(); window.location = '{% if post.is_page or is_page %}{% url 'pages_edit' id=blog.subdomain %}{% else %}{% url 'posts_edit' id=blog.subdomain %}{% endif %}'"
+            onclick="event.preventDefault(); sessionStorage.clear(); window.location = '{% if post.is_page or is_page %}{% url 'pages_edit' %}{% else %}{% url 'posts_edit' %}{% endif %}'"
         >
             &#8592; Back
         </button>
@@ -114,12 +114,12 @@ New post | Bear Blog
         </span>
         <span>
             <a id='upload-image'>Insert media</a> |
-            <a href="{% url 'media_center' id=blog.subdomain %}" target="_blank">Media</a> |
+            <a href="{% url 'media_center' %}" target="_blank">Media</a> |
             <a id="preview">Preview</a>
         </span>
     </span>
 </form>
 
 {% include '../snippets/editor_functions.html' with blog=blog post=post%}
-{{ request.user.settings.dashboard_footer | safe }}
+{{ blog.footer_directive | safe }}
 {% endblock %}

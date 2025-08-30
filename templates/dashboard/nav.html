@@ -5,7 +5,7 @@
 {% block custom_styles %}
     {% include 'styles/blog/default.css' %}
     {% include 'styles/dashboard.css' %}
-    {{ request.user.settings.dashboard_styles | safe }}
+    {% include 'snippets/styles.html' with blog=blog %}
 {% endblock %}
 
 {% block nav %}{% include '../snippets/dashboard_nav.html' %}{% endblock %}
@@ -26,6 +26,6 @@ textarea {
 }
 </style>
 
-{{ request.user.settings.dashboard_footer | safe }}
+{{ blog.footer_directive | safe }}
 
 {% endblock %}
