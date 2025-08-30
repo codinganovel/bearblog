@@ -10,6 +10,7 @@ urlpatterns = [
     path('dashboard/nav/', dashboard.nav, name='nav'),
     path('dashboard/styles/', dashboard.styles, name='styles'),
     path('dashboard/settings/', dashboard.settings, name='settings'),
+    path('account/', dashboard.account, name='account'),
     path('dashboard/settings/advanced/', studio.advanced_settings, name='advanced_settings'),
     path('dashboard/directives/', studio.directive_edit, name="directive_edit"),
 
@@ -21,6 +22,12 @@ urlpatterns = [
 
     # Analytics (simplified)
     path('dashboard/analytics/', analytics.analytics, name='analytics'),
+
+    # Email (simplified for personal CMS)
+    path('dashboard/emails/', emailer.email_list, name='email_list'),
+    path('subscribe/', emailer.subscribe, name='subscribe'),
+    path('subscribe/new/', emailer.email_subscribe, name='email_subscribe'),
+    path('subscribe/confirm/', emailer.confirm_subscription, name='confirm_subscription'),
 
     # Posts and Pages
     path('dashboard/posts/', dashboard.posts_edit, name='posts_edit'),

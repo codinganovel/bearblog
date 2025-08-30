@@ -218,3 +218,9 @@ def delete_user(request):
         return redirect('/')
 
     return render(request, 'account/account_confirm_delete.html')
+
+
+@login_required
+def account(request):
+    """Simple account redirect for personal CMS: send to admin index."""
+    return redirect('admin:index')
