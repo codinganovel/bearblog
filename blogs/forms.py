@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Blog, UserSettings
+from .models import Blog
 
 import re
 
@@ -10,32 +10,10 @@ class BlogForm(forms.ModelForm):
         super(BlogForm, self).__init__(*args, **kwargs)
         self.fields['title'].widget.attrs.update({'placeholder': 'A title for your blog...'})
         self.fields['title'].label = False
-        self.fields['subdomain'].widget.attrs.update({'placeholder': 'Preferred subdomain...'})
-        self.fields['subdomain'].label = False
 
     class Meta:
         model = Blog
-        fields = ('title', 'subdomain')
-
-
-class DashboardCustomisationForm(forms.ModelForm):
-    dashboard_styles = forms.CharField(
-        widget=forms.Textarea(),
-        label="Dashboard styles",
-        required=False,
-        help_text="Change the way your dashboard looks and feels with CSS."
-    )
-
-    dashboard_footer = forms.CharField(
-        widget=forms.Textarea(),
-        label="Dashboard footer content",
-        required=False,
-        help_text="Add scripts and other footer content to your dashboard."
-    )
-
-    class Meta:
-        model = UserSettings
-        fields = ('dashboard_styles', 'dashboard_footer')
+        fields = ('title',)
 
 
 class NavForm(forms.ModelForm):
@@ -77,22 +55,10 @@ class StyleForm(forms.ModelForm):
 
 
 class AdvancedSettingsForm(forms.ModelForm):
-    analytics_active = forms.BooleanField(
-        label="Collect analytics",
-        required=False,
-        help_text="Disable to not collect read analytics"
-    )
-
-    date_format =forms.CharField(
+    date_format = forms.CharField(
         max_length=20,
         required=False,
         help_text="<span>More date formats <a href='https://docs.bearblog.dev/date-format/' target='_blank'>here</a></span>"
-    )
-
-    fathom_site_id = forms.CharField(
-        max_length=20,
-        required=False,
-        help_text="<span>More in-depth analytics using <a href='https://usefathom.com/ref/GMAGWL' target='_blank'>Fathom</a></span>"
     )
 
     meta_tag = forms.CharField(
@@ -105,7 +71,13 @@ class AdvancedSettingsForm(forms.ModelForm):
         widget=forms.Textarea(),
         label="robots.txt content",
         required=False,
-        help_text="Set the content of your robots.txt file. Cache updates every 20 minutes."
+        help_text="Set the content of your robots.txt file."
+    )
+
+    rss_alias = forms.CharField(
+        max_length=100,
+        required=False,
+        help_text="Custom RSS feed path (optional)"
     )
 
     def clean_meta_tag(self):
@@ -118,7 +90,7 @@ class AdvancedSettingsForm(forms.ModelForm):
 
     class Meta:
         model = Blog
-        fields = ('analytics_active', 'optimise_images', 'date_format', 'fathom_site_id', 'blog_path', 'rss_alias', 'meta_tag', 'robots_txt')
+        fields = ('optimise_images', 'date_format', 'rss_alias', 'meta_tag', 'robots_txt')
 
 
 class PostTemplateForm(forms.ModelForm):

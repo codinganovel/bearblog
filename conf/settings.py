@@ -1,46 +1,17 @@
-import sentry_sdk
 import os
-import dj_database_url
 from pathlib import Path
-from dotenv import load_dotenv
 
-load_dotenv()
-
-PROJECT_NAME = "🐼 BEARBLOG 🐼"
+PROJECT_NAME = "🐼 Personal CMS 🐼"
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('SECRET')
-LEMONSQUEEZY_SIGNATURE = os.getenv('LEMONSQUEEZY_SIGNATURE')
+# Basic Django settings for personal use
+SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-change-in-production')
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-DEBUG = (os.getenv('DEBUG') == 'True')
-
-if not DEBUG:
-    # Logging settings
-    def before_send(event, hint):
-        """Don't log django.DisallowedHost errors."""
-        if 'log_record' in hint:
-            if hint['log_record'].name == 'django.security.DisallowedHost':
-                return None
-        return event
-
-    sentry_sdk.init(
-        dsn=os.getenv("SENTRY_DSN"),
-        auto_session_tracking=False,
-        traces_sample_rate=0.001,
-        profiles_sample_rate=0.001,
-        send_default_pii=True,
-        before_send=before_send
-    )
-
-    # ADMINS = (('Webmaster', os.getenv('ADMIN_EMAIL')),)
-
-
-# Host & proxy settings
-ALLOWED_HOSTS = ['*']
-CSRF_TRUSTED_ORIGINS = ['https://*.bearblog.dev', 'https://bearblog.dev']
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-USE_X_FORWARDED_HOST = True
+# Host settings - allow all for development, restrict in production
+ALLOWED_HOSTS = ['*'] if DEBUG else [os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1')]
+CSRF_TRUSTED_ORIGINS = [f'http://localhost:8000', f'https://localhost:8000'] if DEBUG else []
 
 X_FRAME_OPTIONS = 'ALLOWALL'
 
@@ -50,9 +21,7 @@ INTERNAL_IPS = ['127.0.0.1']
 SITE_ID = 1
 
 INSTALLED_APPS = [
-    'judoscale.django',
     'django.contrib.admin',
-    'django.contrib.sites',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -60,32 +29,23 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'blogs.apps.BlogsConfig',
-    'allauth.account',
-    'allauth.socialaccount',
-    'debug_toolbar',
     'pygmentify',
 ]
 
+# Use default Django authentication
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
 )
 
 MIDDLEWARE = [
-    'blogs.middleware.RateLimitMiddleware',
-    'blogs.middleware.ConditionalXFrameOptionsMiddleware',
     'django.middleware.gzip.GZipMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'blogs.middleware.AllowAnyDomainCsrfMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'blogs.middleware.RequestPerformanceMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'conf.urls'
@@ -112,31 +72,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'conf.wsgi.application'
 
-# All-auth setup
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-if not DEBUG:
-    ACCOUNT_EMAIL_VERIFICATION = 'none'
-    ACCOUNT_CONFIRM_EMAIL_ON_GET = True
-    ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_UNIQUE_EMAIL = True
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = False
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
-
-# Database
-# https://docs.djangoproject.com/en/3.0/ref/settings/#databases
-
+# Database - use SQLite for personal use, easy to deploy
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'dev.db'),
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
-
-if os.getenv('DATABASE_URL'):
-    db_from_env = dj_database_url.config(conn_max_age=600)
-    DATABASES['default'].update(db_from_env)
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 MB
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -185,16 +127,20 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 LOGIN_REDIRECT_URL = '/dashboard/'
 
-# Emailer
+# Email settings - optional for personal use
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@yourblog.com')
+SERVER_EMAIL = os.getenv('SERVER_EMAIL', 'admin@yourblog.com')
 
-DEFAULT_FROM_EMAIL = "ʕ•ᴥ•ʔ Bear Blog <noreply@bearblog.dev>"
-SERVER_EMAIL = "ʕ•ᴥ•ʔ Bear Admin <noreply@bearblog.dev>"
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.eu.mailgun.org'
-EMAIL_HOST_USER = 'postmaster@mg.bearblog.dev'
-EMAIL_HOST_PASSWORD = os.getenv('MAILGUN_PASSWORD', False)
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+# Use console backend for development, SMTP for production
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 
-# Referrer policy
+# Security settings
 SECURE_REFERRER_POLICY = "origin-when-cross-origin"

@@ -9,24 +9,22 @@
 </p>
 
 <span>
-    <a href="{% url 'dashboard' id=blog.subdomain %}">Home</a>
+    <a href="{% url 'dashboard' %}">Home</a>
     {% if blog %}
-    <a href="{% url 'nav' id=blog.subdomain %}">Nav</a>
-    <a href="{% url 'posts_edit' id=blog.subdomain %}">Posts</a>
-    <a href="{% url 'pages_edit' id=blog.subdomain %}">Pages</a>
-    <a href="{% url 'styles' id=blog.subdomain %}">Themes</a>
+    <a href="{% url 'nav' %}">Nav</a>
+    <a href="{% url 'posts_edit' %}">Posts</a>
+    <a href="{% url 'pages_edit' %}">Pages</a>
+    <a href="{% url 'styles' %}">Themes</a>
     <a href="{% url 'email_list' id=blog.subdomain %}">Emails</a>
     {% endif %}
-    {% if not blog.user.settings.upgraded %}
-    <a href="{% url 'upgrade' %}" style="color:salmon;" class="upgrade">Upgrade <span class="bear flex"></span></a>
-    {% endif %}
+    <!-- Upgrade removed for personal CMS -->
 </span>
 
 <span>
     {% if blog.analytics_active %}
-    <a href="{% url 'analytics' id=blog.subdomain %}">Analytics</a>
+    <a href="{% url 'analytics' %}">Analytics</a>
     {% endif %}
-    <a href="{% url 'settings' id=blog.subdomain %}">Settings</a>
+    <a href="{% url 'settings' %}">Settings</a>
     <a href="{% url 'account' %}" class="account bear"></a>
 </span>
 

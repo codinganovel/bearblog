@@ -18,7 +18,6 @@ from mistune.directives import FencedDirective, RSTDirective
 from mistune.directives import Admonition, TableOfContents
 from zoneinfo import ZoneInfo
 
-import latex2mathml.converter
 import re
 
 from blogs.helpers import unmark
@@ -128,18 +127,13 @@ class MyRenderer(HTMLRenderer):
         # Skip rendering if there's a space before the closing dollar sign
         if text.endswith(' '):
             return f'${text}$'
-        try:
-            return latex2mathml.converter.convert(text)
-        except Exception as e:
-            print("LaTeX rendering error")
+        # Simplified math rendering - just return as text
+        return f'${text}$'
 
     
     def block_math(self, text):
-        try:
-            
-            return latex2mathml.converter.convert(text).replace('display="inline"', 'display="block"')
-        except Exception as e:
-            print("LaTeX rendering error")
+        # Simplified math rendering - just return as text
+        return f'$${text}$$'
     
     def block_code(self, code, info=None):
         if info is None:
@@ -180,9 +174,8 @@ def markdown(content, blog=None, post=None, tz=None):
     except TypeError:
         return ''
 
-    # If not upgraded remove iframes and js
-    if not blog or not blog.user.settings.upgraded:
-        processed_markup = clean(processed_markup)
+    # For personal CMS, allow all content (no upgrade restrictions)
+    # processed_markup = clean(processed_markup)  # Removed upgrade restriction
 
     # Replace {{ xyz }} elements
     if blog:
@@ -294,12 +287,9 @@ def element_replacement(markup, blog, post=None, tz=None):
     if post:
         translation.activate(post.lang)
 
-    if blog.user.settings.upgraded:
-        markup = markup.replace('{{ email-signup }}', render_to_string('snippets/email_subscribe_form.html'))
-        markup = markup.replace('{{email-signup}}', render_to_string('snippets/email_subscribe_form.html'))
-    else:
-        markup = markup.replace('{{ email-signup }}', '')
-        markup = markup.replace('{{email-signup}}', '')
+    # For personal CMS, allow email signup forms
+    markup = markup.replace('{{ email-signup }}', render_to_string('snippets/email_subscribe_form.html'))
+    markup = markup.replace('{{email-signup}}', render_to_string('snippets/email_subscribe_form.html'))
 
     markup = markup.replace('{{ blog_title }}', escape(blog.title))
     markup = markup.replace('{{ blog_description }}', escape(blog.meta_description))

@@ -24,7 +24,7 @@
 
 {% block imports %}
 
-{% if blog.user.settings.upgraded %}{{ blog.header_directive | safe }}{% endif %}
+{{ blog.header_directive | safe }}
 
 {% if blog.fathom_site_id %}<script src="https://cdn.usefathom.com/script.js" data-site="{{ blog.fathom_site_id }}" defer></script>{% endif %}
 {% if blog.contains_code %}<link rel="stylesheet" href="{% pygmentify_css minify='false' %}">{% endif %}
@@ -41,7 +41,7 @@
 <a href="{{ bear_root }}/mothership/blogs/blog/{{ blog.id }}/change/" target="_blank" style="position:absolute;top:0;left:3px;">Blog admin</a>
 {% endif %}
 
-{% if request.user == blog.user and not preview %}
+{% if request.user.is_authenticated and not preview %}
 <a href="{% url 'dashboard' id=blog.subdomain %}" target="_blank" style="position: fixed;right: 0;top: 0;padding: 20px;color: lightgrey;text-decoration: none;font-size: 25px;">✎</a>
 {% endif %}
 
@@ -61,7 +61,7 @@
 {% endblock %}
 
 {% block footer %}
-{% if blog.user.settings.upgraded and blog.footer_directive %}
+{% if blog.footer_directive %}
 <span id="footer-directive">
     {% markdown content=blog.footer_directive blog=blog post=None tz=tz %}
 </span>

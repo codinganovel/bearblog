@@ -15,11 +15,20 @@ from PIL import Image, UnidentifiedImageError, ImageOps
 import re
 import json
 import os
-import boto3
 import requests
 import threading
 
 from blogs.models import Blog, Media
+
+def get_blog():
+    """Get the single blog instance for personal CMS"""
+    blog = Blog.objects.first()
+    if not blog:
+        blog = Blog.objects.create(
+            title="My Personal Blog",
+            content="Welcome to my personal blog!"
+        )
+    return blog
 
 bucket_name = 'bear-images'
 
@@ -36,19 +45,15 @@ file_size_limit = 10 * 1024 * 1024 # 10MB in bytes
 
 
 @login_required
-def media_center(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def media_center(request):
+    blog = get_blog()
     
-    if not blog.user.settings.upgraded:
-        return redirect('upgrade')
+    # Skip upgrade check for personal CMS
 
     error_messages = []
 
     # Upload media
-    if request.method == "POST" and request.FILES.getlist('file') and blog.user.settings.upgraded is True:
+    if request.method == "POST" and request.FILES.getlist('file'):
         file_links = upload_files(blog, request.FILES.getlist('file'))
         for link in file_links:
             if 'Error' in link:
@@ -83,13 +88,10 @@ def media_center(request, id):
 
 @csrf_exempt
 @login_required
-def upload_image(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def upload_image(request):
+    blog = get_blog()
 
-    if request.method == "POST" and blog.user.settings.upgraded is True:
+    if request.method == "POST":
         file_links = upload_files(blog, request.FILES.getlist('file'))
 
         return HttpResponse(json.dumps(sorted(file_links)), 200)
@@ -148,7 +150,7 @@ def upload_files(blog, file_list):
 
         # Move S3 upload to a thread
         thread = threading.Thread(
-            target=upload_to_s3,
+            target=save_locally,
             args=(filepath, file_data, content_type)
         )
         thread.start()
@@ -156,25 +158,22 @@ def upload_files(blog, file_list):
     return sorted(file_links)
 
 
-def upload_to_s3(filepath, file_data, content_type):
-    session = boto3.session.Session()
-    client = session.client(
-        's3',
-        endpoint_url='https://sfo2.digitaloceanspaces.com',
-        region_name='sfo2',
-        aws_access_key_id=os.getenv('SPACES_ACCESS_KEY_ID'),
-        aws_secret_access_key=os.getenv('SPACES_SECRET'))
-
+def save_locally(filepath, file_data, content_type):
+    """Save file locally for personal CMS"""
     try:
-        response = client.put_object(
-            Bucket=bucket_name,
-            Key=filepath,
-            Body=file_data,
-            ContentType=content_type,
-            ACL='public-read',
-        )
+        # Create media directory if it doesn't exist
+        media_dir = os.path.join('media', os.path.dirname(filepath))
+        os.makedirs(media_dir, exist_ok=True)
+
+        # Save file
+        full_path = os.path.join('media', filepath)
+        with open(full_path, 'wb') as f:
+            f.write(file_data)
+
+        # Return local URL
+        return f'/media/{filepath}'
     except Exception as e:
-        print(f"Error uploading to S3: {str(e)}")
+        print(f"Error saving locally: {str(e)}")
         raise e
 
 
@@ -273,11 +272,8 @@ def get_uploaded_images(blog):
 
 
 @login_required
-def delete_selected_media(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def delete_selected_media(request):
+    blog = get_blog()
     
     if request.method == "POST":
         selected_media = request.POST.getlist('selected_media')

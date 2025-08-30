@@ -5,8 +5,7 @@ from django.views.generic import RedirectView
 
 
 urlpatterns = [
-    path('mothership/', admin.site.urls),
-    path('accounts/', include('allauth.urls')),
+    path('admin/', admin.site.urls),
     path('', include('blogs.urls')),
     path("favicon.ico", RedirectView.as_view(url='/static/favicon.ico', permanent=True)),
     path("logo.png", RedirectView.as_view(url='/static/logo.png', permanent=True)),
@@ -15,10 +14,6 @@ urlpatterns = [
     re_path(r"^favicons/.*$", RedirectView.as_view(url='/static/logo.png', permanent=True)),
 ]
 
-if settings.DEBUG:
-    import debug_toolbar
-    urlpatterns = [
-        path('__debug__/', include(debug_toolbar.urls)),
-    ] + urlpatterns
+# Debug toolbar removed - no longer needed for personal CMS
 
 handler404 = 'blogs.views.blog.not_found'

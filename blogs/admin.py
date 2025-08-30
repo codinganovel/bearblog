@@ -1,142 +1,28 @@
 from django.contrib import admin
-from django.contrib.auth.models import User
-from django.contrib.auth.admin import UserAdmin
 from django.db.models import Count
-from django.utils.html import escape, format_html, format_html_join
+from django.utils.html import escape, format_html
 from django.urls import reverse
-from django.utils.safestring import mark_safe
 
-from blogs.models import Blog, PersistentStore, Post, Stylesheet, Upvote, Hit, Subscriber, UserSettings, Media
+from blogs.models import Blog, Post, Stylesheet, Media
 
 
-admin.autodiscover()
 admin.site.enable_nav_sidebar = False
-
-
-class UserAdmin(admin.ModelAdmin):
-    list_display = ('email', 'is_active', 'is_staff', 'date_joined')
-    ordering = ('-date_joined',)
-    search_fields = ('email', 'blogs__subdomain')
-
-
-admin.site.unregister(User)
-admin.site.register(User, UserAdmin)
-
-@admin.register(UserSettings)
-class UserSettingsAdmin(admin.ModelAdmin):
-    raw_id_fields = ('user',)
-    list_display = ('email', 'user_link', 'date_joined', 'blogs', 'display_is_active', 'upgraded', 'upgraded_date', 'order_id')
-    
-    def email(self, obj):
-        return obj.user.email
-    
-    def user_link(self, obj):
-        user = obj.user
-        user_model = user.__class__
-        app_label = user_model._meta.app_label
-        model_name = user_model._meta.model_name
-        url_name = f'admin:{app_label}_{model_name}_change'
-        url = reverse(url_name, args=[user.pk])
-        return format_html('<a href="{}">{}</a>', url, user.pk)
-    user_link.short_description = 'User'
-    
-    def date_joined(self, obj):
-        return obj.user.date_joined
-
-    def display_is_active(self, obj):
-        return obj.user.is_active
-    display_is_active.short_description = 'Active'
-    display_is_active.boolean = True
-
-    def blogs(self, obj):
-        blogs_data = (
-            (
-                blog.dynamic_useful_domain,
-                blog.subdomain,
-                reverse('admin:blogs_blog_change', args=[blog.pk]),
-            ) for blog in obj.user.blogs.all()
-        )
-
-        blogs_links = format_html_join(
-            mark_safe(', '),
-            '{} <a href="{}" target="_blank">[edit]</a>',
-            ((format_html('<a href="{0}" target="_blank">{1}</a>', url, subdomain), edit_url) for url, subdomain, edit_url in blogs_data)
-        )
-        return blogs_links or 'No blogs'
-
-    search_fields = ('user__email', 'order_email', 'order_id', 'user__blogs__title', 'user__blogs__subdomain')
-
-    list_filter = (
-        ('upgraded', admin.BooleanFieldListFilter),
-        ('user__is_active', admin.BooleanFieldListFilter),
-    )
 
 
 @admin.register(Blog)
 class BlogAdmin(admin.ModelAdmin):
-    raw_id_fields = ('user',)
     def get_queryset(self, request):
         return Blog.objects.annotate(posts_count=Count('posts'))
 
     def post_count(self, obj):
         return obj.posts_count
-    post_count.short_description = ('Post count')
+    post_count.short_description = 'Post count'
     post_count.admin_order_field = "posts_count"
 
-    def domain_url(self, obj):
-        if not obj.domain:
-            return None
-        return format_html(
-            "<a href='http://{url}' target='_blank'>{url}</a>",
-            url=obj.domain)
-    domain_url.short_description = "Domain url"
-    domain_url.admin_order_field = 'domain'
-
-    def subdomain_url(self, obj):
-        return format_html(
-            "<a href='http://{url}' target='_blank'>{url}</a>",
-            url=obj.blank_bear_domain)
-    subdomain_url.short_description = "Subdomain"
-
-    def user_link(self, obj):
-        return format_html('<a href="{url}">{username}</a>',
-                           url=reverse("admin:blogs_usersettings_change", args=(obj.user.settings.id,)),
-                           username=escape(obj.user.email))
-    user_link.allow_tags = True
-    user_link.short_description = "User Settings"
-
-    def user_email(self, obj):
-        return obj.user.email
-    user_email.short_description = "Email"
-
-    def display_upgraded(self, obj):
-        return obj.user.settings.upgraded
-    display_upgraded.short_description = 'Upgraded'
-    display_upgraded.boolean = True
-
-    def display_is_active(self, obj):
-        return obj.user.is_active
-    display_is_active.short_description = 'Active'
-    display_is_active.boolean = True
-
-    list_display = (
-        'title',
-        'user_link',
-        'subdomain_url',
-        'domain_url',
-        'reviewed',
-        'display_upgraded',
-        'display_is_active',
-        'post_count',
-        'created_date')
-
-    search_fields = ('title', 'subdomain', 'domain', 'user__email', 'user__settings__order_email')
+    list_display = ('title', 'post_count', 'created_date', 'last_modified')
+    search_fields = ('title',)
     ordering = ('-created_date',)
-    list_filter = (
-        ('domain', admin.EmptyFieldListFilter),
-        ('user__settings__upgraded', admin.BooleanFieldListFilter),
-        ('user__is_active', admin.BooleanFieldListFilter),
-    )
+    readonly_fields = ('created_date', 'last_modified')
 
     # Method to display posts in the admin change view
     def display_posts(self, obj):
@@ -144,104 +30,39 @@ class BlogAdmin(admin.ModelAdmin):
         if not posts.exists():
             return "No posts yet."
 
-        # Start the table
-        table_header = format_html(
-            '<thead><tr>'
-            '<th>{}</th>'
-            '<th>{}</th>'
-            '<th>{}</th>'
-            '<th>{}</th>'
-            '</tr></thead>',
-            'Post title (Admin)',
-            'Post link (Public)',
-            'Is page',
-            'Published date'
-        )
-
-        table_rows = []
-        for post in posts:
+        # Create a simple list of posts
+        post_links = []
+        for post in posts[:10]:  # Show first 10 posts
             admin_url = reverse('admin:blogs_post_change', args=[post.pk])
-            public_url = f"{obj.dynamic_useful_domain}/{post.slug}/"
-            post_title = escape(post.title or "Untitled")
-            
-            admin_link = format_html('<a href="{}" target="_blank">{}</a>', admin_url, post_title)
-            public_link = format_html('<a href="{}" target="_blank">{}</a>', public_url, public_url)
-            is_page_display = 'Yes' if post.is_page else 'No'
-            published_date_display = post.published_date.strftime("%Y-%m-%d %H:%M") if post.published_date else '-'
+            post_link = format_html('<a href="{}" target="_blank">{}</a><br>',
+                                   admin_url, escape(post.title or "Untitled"))
+            post_links.append(post_link)
 
-            table_rows.append(format_html(
-                '<tr>'
-                '<td>{}</td>'
-                '<td>{}</td>'
-                '<td>{}</td>'
-                '<td>{}</td>'
-                '</tr>',
-                admin_link,
-                public_link,
-                is_page_display,
-                published_date_display
-            ))
+        if len(posts) > 10:
+            post_links.append(f"... and {len(posts) - 10} more posts")
 
-        # Combine header and body within table tags
-        table_html = format_html(
-            '<table style="width: 100%; border-collapse: collapse;" border="1">{}<tbody>{}</tbody></table>',
-            table_header,
-            mark_safe('\n'.join(table_rows))
-        )
+        return format_html(''.join(post_links))
 
-        return table_html
-
-    display_posts.short_description = 'Posts'
-
-    readonly_fields = ('user_link', 'subdomain_url', 'domain_url', 'post_count', 'display_posts')
-
-    def block_blog(self, request, queryset):
-        for blog in queryset:
-            blog.user.is_active = False
-            blog.user.save()
-            print(f"Blocked {blog} and banned {blog.user}")
-
-    block_blog.short_description = "Block selected blogs"
-
-    actions = ['block_blog']
+    display_posts.short_description = 'Recent Posts'
+    readonly_fields = ('created_date', 'last_modified', 'display_posts')
 
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    raw_id_fields = ('blog',)
-    list_display = ('title', 'blog', 'upvotes', 'published_date')
-    search_fields = ('title', 'blog__title')
+    list_display = ('title', 'published_date', 'publish', 'is_page', 'last_modified')
+    search_fields = ('title', 'content')
     ordering = ('-published_date',)
-
-
-@admin.register(Upvote)
-class UpvoteAdmin(admin.ModelAdmin):
-    raw_id_fields = ('post',)
+    list_filter = ('publish', 'is_page')
+    readonly_fields = ('uid', 'last_modified')
 
 
 @admin.register(Media)
 class MediaAdmin(admin.ModelAdmin):
-    raw_id_fields = ('blog',)
-
-@admin.register(Hit)
-class HitAdmin(admin.ModelAdmin):
-    raw_id_fields = ('post',)
-    def post_link(self, obj):
-        return format_html('<a href="/mothership/blogs/post/{id}/change/">{post}</a>',
-                           id=obj.post.pk,
-                           post=escape(obj.post))
-
-    list_display = ('created_date', 'post_link', 'hash_id')
-    search_fields = ('created_date', 'post__title')
-    ordering = ('-created_date',)
-
-
-@admin.register(Subscriber)
-class SubscriberAdmin(admin.ModelAdmin):
-    raw_id_fields = ('blog',)
-    list_display = ('subscribed_date', 'blog', 'email_address')
+    list_display = ('name', 'created_at')
+    search_fields = ('url',)
+    ordering = ('-created_at',)
+    readonly_fields = ('created_at',)
 
 
 admin.site.register(Stylesheet)
-admin.site.register(PersistentStore)
 

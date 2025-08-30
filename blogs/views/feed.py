@@ -3,7 +3,7 @@ from django.utils import timezone
 
 from blogs.helpers import unmark
 from blogs.templatetags.custom_tags import markdown
-from blogs.views.blog import not_found, resolve_address
+from blogs.views.blog import not_found, get_blog
 
 from feedgen.feed import FeedGenerator
 import re
@@ -21,7 +21,7 @@ def feed(request):
     else:
         feed_type = "atom"
 
-    blog = resolve_address(request)
+    blog = get_blog()
     if not blog:
         return not_found(request)
     try:

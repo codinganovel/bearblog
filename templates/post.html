@@ -23,7 +23,7 @@
 {% endblock %}
 
 {% block imports %}
-    {% if blog.user.settings.upgraded %}{{ blog.header_directive | safe }}{% endif %}
+    {{ blog.header_directive | safe }}
 
     {% if blog.fathom_site_id %}<script src="https://cdn.usefathom.com/script.js" data-site="{{ blog.fathom_site_id }}" defer></script>{% endif %}
     {% if post.contains_code %}<link rel="stylesheet" href="{% pygmentify_css minify='false' %}">{% endif %}
@@ -74,7 +74,7 @@
             </small>
         </p>
     {% else %}
-        {% if request.user == blog.user %}
+        {% if request.user.is_authenticated %}
             <a href="{% url 'post_edit' id=blog.subdomain uid=post.uid %}" target="_blank" style="position: fixed;right: 0;top: 0;padding: 20px;color: lightgrey;text-decoration: none;font-size: 25px;">✎</a>
         {% endif %}
     {% endif %}
@@ -119,7 +119,7 @@
 
 
 {% block footer %}
-    {% if blog.user.settings.upgraded and blog.footer_directive %}
+    {% if blog.footer_directive %}
         <span id="footer-directive">
             {% markdown content=blog.footer_directive blog=blog post=post tz=tz %}
         </span>

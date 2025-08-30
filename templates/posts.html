@@ -23,7 +23,7 @@
 
 {% block imports %}
 
-{% if blog.user.settings.upgraded %}{{ blog.header_directive | safe }}{% endif %}
+{{ blog.header_directive | safe }}
 
 {% if blog.fathom_site_id %}<script src="https://cdn.usefathom.com/script.js" data-site="{{ blog.fathom_site_id }}" defer></script>{% endif %}
 {% endblock %}
@@ -68,7 +68,7 @@
 {% endblock %}
 
 {% block footer %}
-{% if blog.user.settings.upgraded and blog.footer_directive %}
+{% if blog.footer_directive %}
 <span id="footer-directive">
 {% markdown content=blog.footer_directive blog=blog post=None tz=tz %}
 </span>

@@ -1,6 +1,5 @@
 from django.utils import timezone
 from django.core.mail import send_mail, get_connection, EmailMultiAlternatives
-from django.contrib.gis.geoip2 import GeoIP2
 from django.conf import settings
 from django.db import connection
 from django.utils.text import slugify
@@ -15,8 +14,6 @@ import requests
 import subprocess
 from datetime import timedelta
 from time import time
-import geoip2
-from ipaddr import client_ip
 import hashlib
 
 from blogs.models import Post
@@ -118,25 +115,24 @@ def pseudo_word(length=5):
 
 
 def salt_and_hash(request, duration='day'):
-    ip_date_salt_string = f"{client_ip(request)}-{timezone.now().date()}-{os.getenv('SALT')}"
-    
+    """Simplified hashing function - removed ipaddr dependency"""
+    # For personal CMS, use a simple hash based on timestamp
     if duration == 'year':
-        ip_date_salt_string = f"{client_ip(request)}-{timezone.now().year}-{os.getenv('SALT')}"
+        date_part = timezone.now().year
+    else:
+        date_part = timezone.now().date()
 
-    hash_id = hashlib.sha256(ip_date_salt_string.encode('utf-8')).hexdigest()
+    hash_string = f"anonymous-{date_part}-{os.getenv('SECRET_KEY', 'default-salt')}"
+    hash_id = hashlib.sha256(hash_string.encode('utf-8')).hexdigest()
 
     return hash_id
 
 
 def get_country(user_ip):
-    # user_ip = '45.222.31.178'
-    try:
-        g = GeoIP2()
-        country = g.country(user_ip)
-
-        return country
-    except geoip2.errors.AddressNotFoundError:
-        return {}
+    """Simplified country detection - removed geoip2 dependency"""
+    # For personal CMS, we'll just return empty dict
+    # GeoIP functionality removed to simplify deployment
+    return {'country_name': 'Unknown'}
 
 
 def unmark(content):
@@ -215,20 +211,17 @@ def send_async_mail(subject, html_message, from_email, recipient_list):
 
 
 def random_post_link():
-    count = Post.objects.filter(
-            blog__reviewed=True,
-            publish=True,
-            published_date__lte=timezone.now(),
-            make_discoverable=True,
-            content__isnull=False
-        ).count()
-    random_index = random.randint(0, count - 1)
-    post = Post.objects.filter(
-        blog__reviewed=True,
+    """Get a random published post link - simplified for single blog"""
+    posts = Post.objects.filter(
         publish=True,
         published_date__lte=timezone.now(),
-        make_discoverable=True,
         content__isnull=False
-    )[random_index]
+    )
 
-    return f"{post.blog.useful_domain}/{post.slug}"
+    if posts.exists():
+        count = posts.count()
+        random_index = random.randint(0, count - 1)
+        post = posts[random_index]
+        return f"/{post.slug}/"
+
+    return "/"

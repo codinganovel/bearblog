@@ -12,7 +12,6 @@ import time
 import threading
 from collections import defaultdict
 from contextlib import contextmanager
-from ipaddr import client_ip
 import redis
 import json
 import os
@@ -155,7 +154,7 @@ class RateLimitMiddleware:
         if  'ping' in request.path or 'feed' in request.path:
             return self.get_response(request)
 
-        client_ip_address = client_ip(request)
+        client_ip_address = request.META.get('REMOTE_ADDR', '127.0.0.1')
         current_time = time.time()
 
         # Clean up old requests

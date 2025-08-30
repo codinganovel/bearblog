@@ -15,10 +15,20 @@ import random
 import string
 
 from blogs.backup import backup_in_thread
-from blogs.forms import AdvancedSettingsForm, BlogForm, DashboardCustomisationForm, PostTemplateForm
+from blogs.forms import AdvancedSettingsForm, BlogForm, PostTemplateForm
 from blogs.helpers import check_connection, is_protected, salt_and_hash
-from blogs.models import Blog, Post, Upvote
+from blogs.models import Blog, Post
 from blogs.subscriptions import get_subscriptions
+
+def get_blog():
+    """Get the single blog instance for personal CMS"""
+    blog = Blog.objects.first()
+    if not blog:
+        blog = Blog.objects.create(
+            title="My Personal Blog",
+            content="Welcome to my personal blog!"
+        )
+    return blog
 
 
 @login_required
@@ -70,11 +80,8 @@ def list(request):
 
 
 @login_required
-def studio(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def studio(request):
+    blog = get_blog()
 
     error_messages = []
     header_content = request.POST.get('header_content', '')
@@ -135,8 +142,7 @@ def parse_raw_homepage(blog, header_content, body_content):
 
     if not blog.title:
         blog.title = "My blog"
-    if not blog.subdomain:
-        blog.slug = slugify(blog.user.username)
+    # Skip subdomain check for single blog mode
 
     blog.content = body_content
     blog.last_modified = timezone.now()
@@ -145,11 +151,8 @@ def parse_raw_homepage(blog, header_content, body_content):
 
 
 @login_required
-def post(request, id, uid=None):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def post(request, uid=None):
+    blog = get_blog()
 
     is_page = request.GET.get('is_page', '')
     tags = []
@@ -348,11 +351,8 @@ def unique_slug(blog, post, new_slug):
 
 @csrf_exempt
 @login_required
-def preview(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def preview(request):
+    blog = get_blog()
 
     post = Post(blog=blog)
 
@@ -450,11 +450,8 @@ def preview(request, id):
 
 
 @login_required
-def post_template(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def post_template(request):
+    blog = get_blog()
 
     if request.method == "POST":
         form = PostTemplateForm(request.POST, instance=blog)
@@ -470,11 +467,8 @@ def post_template(request, id):
 
 
 @login_required
-def custom_domain_edit(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def custom_domain_edit(request):
+    blog = get_blog()
 
     if not blog.user.settings.upgraded:
         return redirect('upgrade')
@@ -510,11 +504,8 @@ def custom_domain_edit(request, id):
 
 
 @login_required
-def directive_edit(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def directive_edit(request):
+    blog = get_blog()
 
     if not blog.user.settings.upgraded:
         return redirect('upgrade')
@@ -533,11 +524,8 @@ def directive_edit(request, id):
 
 
 @login_required
-def advanced_settings(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def advanced_settings(request):
+    blog = get_blog()
 
     if request.method == "POST":
         form = AdvancedSettingsForm(request.POST, instance=blog)
@@ -553,14 +541,4 @@ def advanced_settings(request, id):
     })
 
 
-@login_required
-def dashboard_customisation(request):
-    if request.method == "POST":
-        form = DashboardCustomisationForm(request.POST, instance=request.user.settings)
-        if form.is_valid():
-            user_settings = form.save(commit=False)
-            user_settings.save()
-    else:
-        form = DashboardCustomisationForm(instance=request.user.settings)
-
-    return render(request, 'dashboard/dashboard_customisation.html', {'form': form})
+# Dashboard customisation removed - not needed for personal CMS

@@ -1,80 +1,59 @@
 from django.utils import timezone
-
 import os
-import boto3
-from io import BytesIO
-import djqscsv
+import json
 from threading import Thread
 
 
 def backup_in_thread(blog):
-    if os.getenv('ENVIRONMENT') == 'dev':
-        return
-
-    if blog.reviewed:
-        print(f"Backing up {blog.title} in thread")
-        thread = Thread(target=backup_blog, args=(blog,))
-        thread.start()
-        return thread
-    else:
-        print(f"Blog {blog.title} is not reviewed, skipping backup")
+    """Simplified backup function for personal CMS"""
+    print(f"Backing up {blog.title} in thread")
+    thread = Thread(target=backup_blog, args=(blog,))
+    thread.start()
+    return thread
 
 
 def backup_blog(blog):
-    date_str = timezone.now().strftime('%Y-%m-%d')
-    base_path = f'content/{blog.subdomain}/{date_str}'
-    
-    aws_access_key = os.environ.get('SPACES_ACCESS_KEY_ID')
-    aws_secret_key = os.environ.get('SPACES_SECRET')
-    s3_bucket = 'bear-backup'
-    
+    """Simple backup function that saves to local files"""
     try:
-        s3_client = boto3.client(
-            's3',
-            region_name='fra1',
-            endpoint_url='https://fra1.digitaloceanspaces.com',
-            aws_access_key_id=aws_access_key,
-            aws_secret_access_key=aws_secret_key
-        )
-        
-        uploaded_files = []
-        
-        # Export and upload posts CSV
-        if blog.posts.count() > 0:
-            # Create posts CSV in memory
-            posts_csv_buffer = BytesIO()
-            djqscsv.write_csv(blog.posts.values(), posts_csv_buffer)
-            
-            # Upload posts CSV
-            posts_csv_buffer.seek(0)
-            posts_object_path = f'{base_path}/posts.csv'
-            s3_client.upload_fileobj(posts_csv_buffer, s3_bucket, posts_object_path)
-            uploaded_files.append(posts_object_path)
-        
-        # Export and upload blog info CSV
-        blog_csv_buffer = BytesIO()
+        date_str = timezone.now().strftime('%Y-%m-%d')
+        backup_dir = os.path.join('backups', date_str)
+        os.makedirs(backup_dir, exist_ok=True)
 
-        # Create a queryset with just this blog
-        blog_queryset = type(blog).objects.filter(pk=blog.pk)
-        djqscsv.write_csv(blog_queryset.values(), blog_csv_buffer)
-        
-        # Upload blog CSV
-        blog_csv_buffer.seek(0)
-        blog_object_path = f'{base_path}/blog.csv'
-        s3_client.upload_fileobj(blog_csv_buffer, s3_bucket, blog_object_path)
-        uploaded_files.append(blog_object_path)
-        
+        # Save blog data
+        blog_data = {
+            'title': blog.title,
+            'content': blog.content,
+            'meta_description': blog.meta_description,
+            'created_date': blog.created_date.isoformat(),
+            'last_modified': blog.last_modified.isoformat(),
+        }
+
+        with open(os.path.join(backup_dir, 'blog.json'), 'w') as f:
+            json.dump(blog_data, f, indent=2)
+
+        # Save posts data
+        posts_data = []
+        for post in blog.posts.all():
+            posts_data.append({
+                'title': post.title,
+                'slug': post.slug,
+                'content': post.content,
+                'published_date': post.published_date.isoformat() if post.published_date else None,
+                'publish': post.publish,
+                'is_page': post.is_page,
+            })
+
+        with open(os.path.join(backup_dir, 'posts.json'), 'w') as f:
+            json.dump(posts_data, f, indent=2)
+
         return {
             'success': True,
-            'blog_subdomain': blog.subdomain,
             'backup_date': date_str,
-            'uploaded_files': uploaded_files,
-            'post_count': blog.posts.count()
+            'post_count': len(posts_data)
         }
-        
+
     except Exception as e:
         return {
             'success': False,
-            'error': str(e),
-            'blog_subdomain': blog.subdomain
+            'error': str(e)
         }

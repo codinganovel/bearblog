@@ -3,21 +3,26 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 
-from ipaddr import client_ip
 from unicodedata import lookup
-import djqscsv
 
 from blogs.forms import NavForm, StyleForm
 from blogs.helpers import get_country, is_protected
 from blogs.models import Blog, Post, Stylesheet
 
+def get_blog():
+    """Get the single blog instance for personal CMS"""
+    blog = Blog.objects.first()
+    if not blog:
+        blog = Blog.objects.create(
+            title="My Personal Blog",
+            content="Welcome to my personal blog!"
+        )
+    return blog
+
 
 @login_required
-def nav(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def nav(request):
+    blog = get_blog()
 
     if request.method == "POST":
         form = NavForm(request.POST, instance=blog)
@@ -36,11 +41,8 @@ def nav(request, id):
 
 
 @login_required
-def styles(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def styles(request):
+    blog = get_blog()
 
     if request.method == "POST":
         stylesheet = request.POST.get("stylesheet")
@@ -48,7 +50,7 @@ def styles(request, id):
             blog.custom_styles = Stylesheet.objects.get(identifier=stylesheet).css
             blog.overwrite_styles = True
             blog.save()
-            return redirect('styles', id=blog.subdomain)
+            return redirect('styles')
         else:
             form = StyleForm(request.POST, instance=blog)
             if form.is_valid():
@@ -74,19 +76,16 @@ def styles(request, id):
 
 
 @login_required
-def blog_delete(request, id):
+def blog_delete(request):
     if request.method == "POST":
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+        blog = get_blog()
         blog.delete()
-    return redirect('account')
+    return redirect('home')
 
 
 @login_required
-def posts_edit(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def posts_edit(request):
+    blog = get_blog()
 
     posts = Post.objects.filter(blog=blog, is_page=False).order_by('-published_date')
 
@@ -97,11 +96,8 @@ def posts_edit(request, id):
     })
 
 @login_required
-def pages_edit(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def pages_edit(request):
+    blog = get_blog()
 
     posts = Post.objects.filter(blog=blog, is_page=True).order_by('-published_date')
 
@@ -113,24 +109,20 @@ def pages_edit(request, id):
 
 
 @login_required
-def post_delete(request, id, uid):
+def post_delete(request, uid):
     if request.method == "POST":
-        if request.user.is_superuser:
-            blog = get_object_or_404(Blog, subdomain=id)
-        else:
-            blog = get_object_or_404(Blog, user=request.user, subdomain=id)
-
+        blog = get_blog()
         post = get_object_or_404(Post, blog=blog, uid=uid)
         is_page = post.is_page
         post.delete()
         if is_page:
-            return redirect('pages_edit', id=blog.subdomain)
-    return redirect('posts_edit', id=blog.subdomain)
+            return redirect('pages_edit')
+    return redirect('posts_edit')
 
 
 @login_required
 def upgrade(request):
-    country = get_country(client_ip(request))
+    country = get_country(request.META.get('REMOTE_ADDR', '127.0.0.1'))
     country_name = ''
     country_emoji = ''
     promo_code = ''
@@ -174,11 +166,8 @@ def upgrade(request):
 
 
 @login_required
-def opt_in_review(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def opt_in_review(request):
+    blog = get_blog()
 
     if request.method == 'POST':
         spam = request.POST.get("spam", "")
@@ -192,11 +181,8 @@ def opt_in_review(request, id):
 
 
 @login_required
-def settings(request, id):
-    if request.user.is_superuser:
-        blog = get_object_or_404(Blog, subdomain=id)
-    else:
-        blog = get_object_or_404(Blog, user=request.user, subdomain=id)
+def settings(request):
+    blog = get_blog()
     
     error_messages = []
     
@@ -207,20 +193,16 @@ def settings(request, id):
         if subdomain:
             subdomain = slugify(subdomain.split('.')[0]).replace('_', '-')
             if not Blog.objects.filter(subdomain=subdomain).exclude(pk=blog.pk).exists() and not is_protected(subdomain):
-                blog.subdomain = subdomain
+                # For single blog, just save lang
                 blog.lang = lang
                 blog.save()
-                return redirect('settings', id=blog.subdomain)
+                return redirect('settings')
             else:
                 error_messages.append(f'The subdomain "{subdomain}" is reserved')
 
-    if request.GET.get("export", ""):
-        # Only export specified fields
-        fields = ['uid', 'title', 'slug', 'alias', 'published_date', 'all_tags', 
-                  'publish', 'make_discoverable', 'is_page', 'content', 
-                  'canonical_url', 'meta_description', 'meta_image', 'lang', 
-                  'class_name', 'first_published_at']
-        return djqscsv.render_to_csv_response(blog.posts.values(*fields))
+    # CSV export removed - not needed for personal CMS
+    # if request.GET.get("export", ""):
+    #     return HttpResponse("CSV export not available")
     
     return render(request, "dashboard/settings.html", {
         "blog": blog,
